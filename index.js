@@ -12,6 +12,30 @@ const simulateClick = function (elem) {
 	var canceled = !elem.dispatchEvent(evt);
 };
 
+const getToken = () => document.querySelectorAll('meta[name="csrf-token"]')[0].getAttribute('content');
+
+const sleep = m => new Promise(r => setTimeout(r, m))
+const getMoreSteps = async (times = 10) => {
+    if (times > 0) {
+        console.log('getMoreSteps', times);
+        await fetch(`/addstepsapi`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'x-csrf-token': getToken(),
+            },
+            body: JSON.stringify({
+                'license': 'message-me-when-you-find-this'
+            })
+        });
+        await sleep(2000);
+        return await getMoreSteps(times - 1);
+    } else {
+        return true;
+    }
+}
+
 const getCurrentResource = (resource) => {
     return parseInt(document.getElementById(`current_${resource}`).innerText, 10);
 }
@@ -77,8 +101,9 @@ const travel = () => {
     const stepBtn = document.getElementsByClassName('stepbuttonnew')[0];
     const monsterBtn = document?.getElementsByClassName('div-travel-text')[0]?.getElementsByClassName('cta')[0];
     const hasMonster = monsterBtn?.innerText === ' Attack';
+    const healthRemaining = getResourcePercentage('health');
 
-    if (hasMonster) {
+    if (hasMonster && healthRemaining >= 40) {
         monsterBtn.click();
     } else if (!stepBtn.disabled) {
         simulateClick(stepBtn);
@@ -90,7 +115,7 @@ const quest = () => {
         const quest = uncompletedQuests[uncompletedQuests.length - 1];
 
         // const allQuests = Array.from(document.getElementsByClassName('kt-widget5__item'));
-        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText === 'Help a blind man and his dog')
+        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText === 'Go Shopping')
         simulateClick(quest.getElementsByTagName('button')[0]);
     } else {
         const performBtn = getModalButton('Perform quest') || getModalButton('Perform Quest');
@@ -117,8 +142,8 @@ const jobs = () => {
     );
 
     if (isModalOpen()) {
-        const jobRange = document.getElementsByClassName('swal2-range')[0]
-        jobRange.value = '2'; // doesn't work
+        const jobRange = document.querySelectorAll('.swal2-range')[0].getElementsByTagName('input')[0];
+        jobRange.value = '5';
         const startBtn = getModalButton('Start the job');
         simulateClick(startBtn);
     } else if (btn) {
@@ -129,18 +154,124 @@ const isJobActive = () => {
     return !!Array.from(document.querySelectorAll('a.btn')).find(e => e.innerText === 'Go to your job area' || e.innerText === 'You are currently working');
 }
 
+const EQUIPMENT_FILTERS = ['weapons', 'armour', 'pets', 'amulets', 'shields', 'boots', 'helmet', 'greaves'];
+const RARITY_FILTERS = ['common', 'uncommon', 'rare'];
+const defaultInventoryState = () => EQUIPMENT_FILTERS.reduce((nacc, n) => ({
+    [n]: RARITY_FILTERS.reduce((xacc, x) => ({ [x]: false, ...xacc }), {}),
+    ...nacc,
+}), {});
+const inventory = () => {
+    const invState = localStorage.getItem('smmo-ext-inv-state');
+    const inventoryState = invState ? JSON.parse(invState) : defaultInventoryState();
+    let activeEquipmentFilter;
+    let activeRarityFilter;
+    EQUIPMENT_FILTERS.forEach(ef => {
+        RARITY_FILTERS.forEach(rf => {
+            if (!inventoryState[ef][rf]) {
+                activeEquipmentFilter = activeEquipmentFilter || ef;
+                activeRarityFilter = activeRarityFilter || rf;
+            }
+        })
+    });
+
+    if (!activeEquipmentFilter && !activeRarityFilter) {
+        return true;
+    }
+
+    const inventoryUrl = '/inventory/items';
+    const searchString = `?rarity=${activeRarityFilter}&type=${activeEquipmentFilter}&minlevel=&maxlevel=&itemname=`;
+    if (!window.location.pathname !== inventoryUrl && window.location.search !== searchString) {
+        window.location.replace(`${inventoryUrl}${searchString}`);
+        return false;
+    }
+
+    const getContainer = (title) => {
+        return Array.from(
+            Array.from(
+                document.querySelectorAll('.kt-portlet')
+            ).find(p =>
+                p.querySelectorAll('.kt-portlet__head-title')?.[0]?.innerText === title
+            ).querySelectorAll('a')
+        ).filter(p => 
+            p.querySelectorAll('.selectableRow')[0]
+        )
+    }
+
+    const equippedItems = getContainer('Equipped Items').reduce((acc, p) => {
+        const [_, statIncrease, stat, equipmentType] = p
+            .innerText
+            .replace(/[\r\n]+/gm, " ")
+            .match(/(\+\d{1,4})\s(str|def|dex)\s(Armour|Weapon|Shield|Pet|Boots|Greaves|Helmet|Amulet)/);
+
+        return {
+            [equipmentType.toLowerCase()]: {
+                stat,
+                statIncrease: parseInt(statIncrease.replace('+', ''), 10),
+            },
+            ...acc,
+        }
+    }, {});
+
+    const unequippedItems = getContainer('Items').map(p => {
+        const contents = p
+            .getAttribute('onclick')
+            .match(/showInventoryItem\(\d+.*\)/)[0]
+            .replace('showInventoryItem(', '')
+            .replace(')', '')
+            .split(',');
+
+        const [id, name, icon, level, equipmentType, hashId, stats, unknown, qty] = contents;
+
+        return {
+            element: p,
+            id: parseInt(id, 10),
+            qty: parseInt(qty, 10),
+            stat: stats.match(/str|def|dex/)[0],
+            statIncrease: parseInt(stats.match(/\+\d+/)[0].replace('+', ''), 10),
+            equipmentType: equipmentType.replace(/'/g, '').toLowerCase(),
+        };
+    }).filter(r => r);
+
+    unequippedItems.forEach(uei => {
+        const equipped = equippedItems[uei.equipmentType];
+        if (uei.statIncrease > equipped.statIncrease) {
+            console.log('Item Should Equip');
+        } else {
+            console.log('Item Should Sell');
+            fetch(`/api/quicksell/${uei.id}/quantity`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    _token: document.querySelectorAll('meta[name="csrf-token"]')[0].getAttribute('content'),
+                    data: `${uei.qty}`,
+                })
+            });
+        }
+    });
+
+    inventoryState[activeEquipmentFilter][activeRarityFilter] = true;
+    localStorage.setItem('smmo-ext-inv-state', JSON.stringify(inventoryState))
+
+    return false;
+}
+
 let appInterval;
 const startInterval = () => {
-    appInterval = setInterval(() => {
+    appInterval = setInterval(async () => {
         const energyRemaining = getCurrentResource('energy');
         const questsRemaining = getCurrentResource('quest_points');
         const healthRemaining = getResourcePercentage('health');
         const stepsRemaining = getCurrentResource('steps');
+        const hasGottenMoreSteps = localStorage.getItem('smmo-ext-steps') === 'true';
 
         // closes levelup modal
         isModalOpen();
 
         if (isJobActive()) {
+            console.log('job active')
             stopIt(true);
             return;
         }
@@ -166,6 +297,12 @@ const startInterval = () => {
                 travel();
             }
         } else {
+            if (!hasGottenMoreSteps) {
+                stopIt();
+                await getMoreSteps();
+                localStorage.setItem('smmo-ext-steps', true);
+                startIt();
+            }
             if (window.location.pathname.match('/jobs/view')) {
                 jobs();
             } else if (window.location.pathname !== '/jobs/viewall') {
@@ -186,6 +323,9 @@ const stopJobInterval = () => {
     appBtn.disabled = false;
 
     localStorage.removeItem('smmo-ext-jobs');
+    localStorage.removeItem('smmo-ext-inv-mng');
+    localStorage.removeItem('smmo-ext-inv-state');
+    localStorage.removeItem('smmo-ext-steps');
 }
 
 let jobInterval;
@@ -198,15 +338,29 @@ const startJobInterval = () => {
     appBtn.disabled = true;
     localStorage.setItem('smmo-ext-jobs', 'true');
 
+    if (!isJobActive()) {
+        stopJobInterval();
+
+        startIt();
+        return;
+    }
+    
+    let hasManagedInventory = true // localStorage.getItem('smmo-ext-inv-mng') === 'true';
+    
     jobInterval = setInterval(() => {
         if (isJobActive()) {
-            window.location.reload(false);
+            if (!hasManagedInventory) {
+                hasManagedInventory = inventory();
+                localStorage.setItem('smmo-ext-inv-mng', hasManagedInventory);
+            } else {
+                window.location.reload(false);
+            }
         } else {
             stopJobInterval();
 
             startIt();
         }
-    }, 60000);
+    }, hasManagedInventory ? 300000 : 2000);
 }
 
 const startIt = () => {
