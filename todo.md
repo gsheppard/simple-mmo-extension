@@ -1,0 +1,16 @@
+- React overhaul
+- inventory screen rehaul
+    - search bar
+    - better placed filters
+    - incorporate collections
+    - fetch all?
+- leaderboard overhaul
+    - show amount of time to beat a certain placement
+- safe mode checker
+- step leaderboard checker
+- button to refill:
+    - steps
+    - quests
+    - keys
+- button to:
+    - skip jobs, only walk
