@@ -143,7 +143,7 @@ const jobs = () => {
 
     if (isModalOpen()) {
         const jobRange = document.querySelectorAll('.swal2-range')[0].getElementsByTagName('input')[0];
-        jobRange.value = '5';
+        jobRange.value = '6';
         const startBtn = getModalButton('Start the job');
         simulateClick(startBtn);
     } else if (btn) {
@@ -213,27 +213,33 @@ const inventory = () => {
     }, {});
 
     const unequippedItems = getContainer('Items').map(p => {
-        const contents = p
+        const onclickContents = p
             .getAttribute('onclick')
             .match(/showInventoryItem\(\d+.*\)/)[0]
             .replace('showInventoryItem(', '')
             .replace(')', '')
             .split(',');
+        const textContents = p
+            .innerText
+            .trim()
+            .replace(/\n/gm, '')
+            .match(/(\d+)x.*\+(\d+)/);
 
-        const [id, name, icon, level, equipmentType, hashId, stats, unknown, qty] = contents;
+        const [id, _, __, ___, equipmentType, ____, stats, _____, qty] = onclickContents;
 
         return {
             element: p,
             id: parseInt(id, 10),
             qty: parseInt(qty, 10),
             stat: stats.match(/str|def|dex/)[0],
-            statIncrease: parseInt(stats.match(/\+\d+/)[0].replace('+', ''), 10),
+            statIncrease: parseInt(textContents[2], 10),
             equipmentType: equipmentType.replace(/'/g, '').toLowerCase(),
         };
     }).filter(r => r);
 
     unequippedItems.forEach(uei => {
         const equipped = equippedItems[uei.equipmentType];
+        console.log(uei.statIncrease, equipped.statIncrease, uei.statIncrease > equipped.statIncrease)
         if (uei.statIncrease > equipped.statIncrease) {
             console.log('Item Should Equip');
         } else {
@@ -265,7 +271,7 @@ const startInterval = () => {
         const questsRemaining = getCurrentResource('quest_points');
         const healthRemaining = getResourcePercentage('health');
         const stepsRemaining = getCurrentResource('steps');
-        const hasGottenMoreSteps = localStorage.getItem('smmo-ext-steps') === 'true';
+        const timesRedeemedSteps = parseInt(localStorage.getItem('smmo-ext-steps'), 10) || 0;
 
         // closes levelup modal
         isModalOpen();
@@ -297,10 +303,10 @@ const startInterval = () => {
                 travel();
             }
         } else {
-            if (!hasGottenMoreSteps) {
+            if (timesRedeemedSteps < 2) {
                 stopIt();
                 await getMoreSteps();
-                localStorage.setItem('smmo-ext-steps', true);
+                localStorage.setItem('smmo-ext-steps', timesRedeemedSteps + 1);
                 startIt();
             }
             if (window.location.pathname.match('/jobs/view')) {
@@ -345,7 +351,7 @@ const startJobInterval = () => {
         return;
     }
     
-    let hasManagedInventory = true // localStorage.getItem('smmo-ext-inv-mng') === 'true';
+    let hasManagedInventory = localStorage.getItem('smmo-ext-inv-mng') === 'true';
     
     jobInterval = setInterval(() => {
         if (isJobActive()) {
@@ -389,10 +395,14 @@ const stopIt = (turnJobWaitOn) => {
     }
 }
 
+const WHITELIST = ['/user', '/messages', '/leaderboards', '/discussionboards'];
+const isWhitelistedPath = WHITELIST.find(pathname => window.location.pathname.match(pathname));
 const start = () => {
+    if (isWhitelistedPath) return;
+
     const startBtn = document.getElementById('bot-play');
     const jobsBtn = document.getElementById('bot-jobs');
-    
+
     startBtn.onclick = (e) => {
         if (appInterval) {
             stopIt();
@@ -424,10 +434,10 @@ controlDiv.innerHTML = `
             <h4>SimpleMMO Bot</h4>
         </div>
         <div class="col-md-3">
-            <button class="btn btn-info" name="action" id="bot-jobs">
+            <button class="btn btn-info" name="action" id="bot-jobs" ${isWhitelistedPath ? "disabled" : ""}>
                 Jobs: Start
             </button>
-            <button class="btn btn-success" name="action" id="bot-play">
+            <button class="btn btn-success" name="action" id="bot-play" ${isWhitelistedPath ? "disabled" : ""}>
                 Auto: Start
             </button>
         </div>
@@ -437,5 +447,8 @@ controlDiv.innerHTML = `
 document.body.prepend(controlDiv);
 
 
-start();
+document.addEventListener("DOMContentLoaded", function() {
+    console.log(getToken())
+    start();
+});
 console.log('extension loaded');
