@@ -15,7 +15,7 @@ const simulateClick = function (elem) {
 const getToken = () => document.querySelectorAll('meta[name="csrf-token"]')[0].getAttribute('content');
 
 const sleep = m => new Promise(r => setTimeout(r, m))
-const getMoreSteps = async (times = 10) => {
+const getMoreSteps = async (times = 11) => {
     if (times > 0) {
         console.log('getMoreSteps', times);
         await fetch(`/addstepsapi`, {
@@ -395,7 +395,7 @@ const stopIt = (turnJobWaitOn) => {
     }
 }
 
-const WHITELIST = ['/user', '/messages', '/leaderboards', '/discussionboards'];
+const WHITELIST = ['/user', '/tasks', '/messages', '/leaderboards', '/discussionboards'];
 const isWhitelistedPath = WHITELIST.find(pathname => window.location.pathname.match(pathname));
 const start = () => {
     if (isWhitelistedPath) return;

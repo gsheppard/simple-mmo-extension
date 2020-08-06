@@ -14,3 +14,4 @@
     - keys
 - button to:
     - skip jobs, only walk
+- auto-heal via items
