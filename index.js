@@ -114,8 +114,9 @@ const quest = () => {
         const uncompletedQuests = Array.from(document.getElementsByClassName('kt-widget5__item')).filter((e) => { return e.getElementsByClassName('label-success').length <= 0 });
         const quest = uncompletedQuests[uncompletedQuests.length - 1];
 
+        // const QUEST_TITLE = 'Travel with a wizard and retrieve a stone';
         // const allQuests = Array.from(document.getElementsByClassName('kt-widget5__item'));
-        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText === 'Play SimpleMMO')
+        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText.match(QUEST_TITLE));
         simulateClick(quest.getElementsByTagName('button')[0]);
     } else {
         const performBtn = getModalButton('Perform quest') || getModalButton('Perform Quest');

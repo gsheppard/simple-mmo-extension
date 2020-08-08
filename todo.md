@@ -6,6 +6,8 @@
     - better placed filters
     - incorporate collections
     - fetch all?
+- Player market
+    - incorporate collections
 - leaderboard overhaul
     - show amount of time to beat a certain placement
 - safe mode checker
