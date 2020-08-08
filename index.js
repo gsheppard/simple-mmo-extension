@@ -115,7 +115,7 @@ const quest = () => {
         const quest = uncompletedQuests[uncompletedQuests.length - 1];
 
         // const allQuests = Array.from(document.getElementsByClassName('kt-widget5__item'));
-        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText === 'Go Shopping')
+        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText === 'Play SimpleMMO')
         simulateClick(quest.getElementsByTagName('button')[0]);
     } else {
         const performBtn = getModalButton('Perform quest') || getModalButton('Perform Quest');
@@ -213,28 +213,32 @@ const inventory = () => {
     }, {});
 
     const unequippedItems = getContainer('Items').map(p => {
-        const onclickContents = p
-            .getAttribute('onclick')
-            .match(/showInventoryItem\(\d+.*\)/)[0]
-            .replace('showInventoryItem(', '')
-            .replace(')', '')
-            .split(',');
-        const textContents = p
-            .innerText
-            .trim()
-            .replace(/\n/gm, '')
-            .match(/(\d+)x.*\+(\d+)/);
+        try {
+            const onclickContents = p
+                .getAttribute('onclick')
+                .match(/showInventoryItem\(\d+.*\)/)[0]
+                .replace('showInventoryItem(', '')
+                .replace(')', '')
+                .split(',');
+            const textContents = p
+                .innerText
+                .trim()
+                .replace(/\n/gm, '')
+                .match(/(\d+)x.*\+(\d+)/);
 
-        const [id, _, __, ___, equipmentType, ____, stats, _____, qty] = onclickContents;
+            const [id, _, __, ___, equipmentType, ____, stats, _____, qty] = onclickContents;
 
-        return {
-            element: p,
-            id: parseInt(id, 10),
-            qty: parseInt(qty, 10),
-            stat: stats.match(/str|def|dex/)[0],
-            statIncrease: parseInt(textContents[2], 10),
-            equipmentType: equipmentType.replace(/'/g, '').toLowerCase(),
-        };
+            return {
+                element: p,
+                id: parseInt(id, 10),
+                qty: parseInt(qty, 10),
+                stat: stats.match(/str|def|dex/)[0],
+                statIncrease: parseInt(textContents[2], 10),
+                equipmentType: equipmentType.replace(/'/g, '').toLowerCase(),
+            };
+        } catch (err) {
+            return false;
+        }
     }).filter(r => r);
 
     unequippedItems.forEach(uei => {

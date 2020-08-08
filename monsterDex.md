@@ -1,3 +1,0 @@
-Blupery: 32162532
-Blupey:  32162673
-Bluperb: 32162923

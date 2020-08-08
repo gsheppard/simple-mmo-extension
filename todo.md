@@ -1,4 +1,6 @@
 - React overhaul
+- Travel Overhaul
+    - Immediately utilize /perform and /attack APIs to never have to reload the page
 - inventory screen rehaul
     - search bar
     - better placed filters
@@ -15,3 +17,4 @@
 - button to:
     - skip jobs, only walk
 - auto-heal via items
+- world boss attacker
