@@ -7,7 +7,7 @@
           "matches": [
             "https://web.simple-mmo.com/*"
           ],
-          "js": ["index.js"]
+          "js": ["build/bundle.js"]
         }
       ]
 }

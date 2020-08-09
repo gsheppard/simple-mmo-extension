@@ -111,12 +111,12 @@ const travel = () => {
 }
 const quest = () => {
     if (!isModalOpen()) {
-        const uncompletedQuests = Array.from(document.getElementsByClassName('kt-widget5__item')).filter((e) => { return e.getElementsByClassName('label-success').length <= 0 });
-        const quest = uncompletedQuests[uncompletedQuests.length - 1];
+        // const uncompletedQuests = Array.from(document.getElementsByClassName('kt-widget5__item')).filter((e) => { return e.getElementsByClassName('label-success').length <= 0 });
+        // const quest = uncompletedQuests[uncompletedQuests.length - 1];
 
-        // const QUEST_TITLE = 'Travel with a wizard and retrieve a stone';
-        // const allQuests = Array.from(document.getElementsByClassName('kt-widget5__item'));
-        // const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText.match(QUEST_TITLE));
+        const QUEST_TITLE = 'Aid a scholar in exploring an ancient ruin';
+        const allQuests = Array.from(document.getElementsByClassName('kt-widget5__item'));
+        const quest = allQuests.find(e => e.getElementsByClassName('kt-widget5__title')[0].innerText.match(QUEST_TITLE));
         simulateClick(quest.getElementsByTagName('button')[0]);
     } else {
         const performBtn = getModalButton('Perform quest') || getModalButton('Perform Quest');
@@ -308,17 +308,18 @@ const startInterval = () => {
                 travel();
             }
         } else {
-            if (timesRedeemedSteps < 2) {
+            // if (timesRedeemedSteps < 2) {
                 stopIt();
                 await getMoreSteps();
                 localStorage.setItem('smmo-ext-steps', timesRedeemedSteps + 1);
                 startIt();
-            }
-            if (window.location.pathname.match('/jobs/view')) {
-                jobs();
-            } else if (window.location.pathname !== '/jobs/viewall') {
-                window.location.replace('/jobs/viewall');
-            }
+                window.location.reload(false);
+            // }
+            // if (window.location.pathname.match('/jobs/view')) {
+            //     jobs();
+            // } else if (window.location.pathname !== '/jobs/viewall') {
+            //     window.location.replace('/jobs/viewall');
+            // }
         }
     }, 2000);
 };
